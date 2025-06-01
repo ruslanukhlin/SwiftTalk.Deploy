@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: citus-coordinator
+spec:
+  serviceName: citus-coordinator
+  replicas: {{ .Values.coordinator.replicas }}
+  selector:
+    matchLabels:
+      app: citus-coordinator
+  template:
+    metadata:
+      labels:
+        app: citus-coordinator
+    spec:
+      containers:
+        - name: citus-coordinator
+          image: {{ .Values.coordinator.image }}
+          ports:
+            - containerPort: {{ .Values.coordinator.ports }}
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-database
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: "trust"
+            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+              value: "citus"
+            - name: POSTGRESQL_LISTEN_ADDRESSES
+              value: "*"
+            - name: CITUS_COORDINATOR_HOST
+              value: "citus-coordinator"
+          resources:
+            limits:
+                cpu: {{ .Values.coordinator.cpu }}
+                memory: {{ .Values.coordinator.memory }}
+          volumeMounts:
+            - name: coordinator-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: coordinator-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: hostpath
+        resources:
+          requests:
+            storage: {{ .Values.coordinator.storage }} 

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: citus-worker
+spec:
+  serviceName: citus-worker
+  replicas: {{ .Values.workers.replicas }}
+  selector:
+    matchLabels:
+      app: citus-worker
+  template:
+    metadata:
+      labels:
+        app: citus-worker
+    spec:
+      containers:
+        - name: citus-worker
+          image: {{ .Values.workers.image }}
+          ports:
+            - containerPort: {{ .Values.workers.ports }}
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-database
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: "trust"
+            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+              value: "citus"
+            - name: POSTGRESQL_LISTEN_ADDRESSES
+              value: "*"
+          resources:
+            limits:
+              cpu: {{ .Values.workers.cpu }}
+              memory: {{ .Values.workers.memory }}
+          volumeMounts:
+            - name: worker-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: worker-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: hostpath
+        resources:
+          requests:
+            storage: {{ .Values.workers.storage }}
