@@ -1,0 +1,8 @@
+services:
+  envoy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "9901:9901"
