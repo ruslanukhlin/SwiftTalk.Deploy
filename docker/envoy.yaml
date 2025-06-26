@@ -23,18 +23,30 @@ static_resources:
                   virtual_hosts:
                     - name: backend
                       domains: ["*"]
+                      cors:
+                        allow_origin_string_match:
+                          - prefix: "http://localhost:3000"
+                          - prefix: "http://localhost:3001"  
+                        allow_methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+                        allow_headers: "*"
+                        expose_headers: "*"
+                        allow_credentials: true
+                        max_age: "86400"
                       routes:
                         - match:
-                            prefix: "/authService/"
+                            prefix: "/auth-service/"
                           route:
                             cluster: auth_service
                             prefix_rewrite: "/"
                         - match:
-                            prefix: "/postService/"
+                            prefix: "/post-service/"
                           route:
                             cluster: post_service
                             prefix_rewrite: "/"
                 http_filters:
+                  - name: envoy.filters.http.cors
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
@@ -50,12 +62,12 @@ static_resources:
                             http_uri:
                               uri: "http://host.docker.internal:5002/.well-known/jwks.json"
                               cluster: auth_service
-                              timeout: 5s
-                            cache_duration: 300s
+                              timeout: "5s"
+                            cache_duration: "300s"
                           forward: true
                       rules:
                         - match:
-                            prefix: "/postService/"
+                            prefix: "/post-service/"
                           requires:
                             provider_name: "my_jwt"
                   - name: envoy.filters.http.router
@@ -72,7 +84,7 @@ static_resources:
   clusters:
     - name: auth_service
       type: STRICT_DNS
-      connect_timeout: 5s
+      connect_timeout: "5s"
       dns_lookup_family: V4_ONLY
       load_assignment:
         cluster_name: auth_service
@@ -86,7 +98,7 @@ static_resources:
 
     - name: post_service
       type: STRICT_DNS
-      connect_timeout: 5s
+      connect_timeout: "5s"
       dns_lookup_family: V4_ONLY
       load_assignment:
         cluster_name: post_service
