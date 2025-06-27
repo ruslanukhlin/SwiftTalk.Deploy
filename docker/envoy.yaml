@@ -53,11 +53,8 @@ static_resources:
                       providers:
                         my_jwt:
                           issuer: "auth-service"
-                          audiences:
-                            - "swift-talk"
-                          from_headers:
-                            - name: Authorization
-                              value_prefix: "Bearer "
+                          from_cookies:
+                            - "access_token"
                           remote_jwks:
                             http_uri:
                               uri: "http://host.docker.internal:5002/.well-known/jwks.json"
